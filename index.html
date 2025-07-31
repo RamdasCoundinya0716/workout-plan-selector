@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,6 +120,23 @@
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
+
+    .center-btn {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .activity-info {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .dark-mode .activity-info {
+      color: #ccc;
+    }
   </style>
 </head>
 <body>
@@ -140,25 +156,38 @@
 
     <div class="toggle-btn" onclick="toggleDarkMode()">🌙 Toggle Dark Mode</div>
 
-    <div class="toggle-btn" onclick="toggleTDEE()">🤖 Not sure about diet? Click here</div>
+    <div class="toggle-btn" onclick="toggleTDEE()">Not sure about diet? Click here</div>
 
     <div id="tdeeBot" style="display:none; margin-top:20px;">
-      <h3>🧠 Nutrition Assistant</h3>
-      
+      <h3>Nutrition Assistant</h3>
+
       <label>Weight (kg): 
         <input type="number" id="weightInput" />
       </label>
 
-      <label>Body Fat %:
-        <select id="bodyFatSelect">
+      <label>Goal:
+        <select id="goalSelector" onchange="handleGoalChange()">
           <option value="">-- Select --</option>
-          <option value="10">10%</option>
-          <option value="15">15%</option>
-          <option value="20">20%</option>
-          <option value="25">25%</option>
-          <option value="30">30%</option>
+          <option value="cut">Cut</option>
+          <option value="bulk">Bulk</option>
         </select>
       </label>
+
+      <div id="cutSection" style="display:none">
+        <label>Body Fat %:
+          <select id="bodyFatSelect">
+            <option value="">-- Select --</option>
+            <option value="10">10%</option>
+            <option value="15">15%</option>
+            <option value="20">20%</option>
+            <option value="25">25%</option>
+            <option value="30">30%</option>
+            <option value="35">35%</option>
+            <option value="40">40%</option>
+          </select>
+        </label>
+        <img src="https://raw.githubusercontent.com/RamdasCoundinya0716/workout-plan-selector/main/bodyfatimage.jpg" alt="Body Fat Reference" class="bodyfat-img" />
+      </div>
 
       <label>Activity Level:
         <select id="activityLevel">
@@ -170,19 +199,26 @@
         </select>
       </label>
 
-      <label>Body Type:
-        <select id="bodyType">
-          <option value="ectomorph">Ectomorph</option>
-          <option value="mesomorph">Mesomorph</option>
-          <option value="endomorph">Endomorph</option>
-        </select>
-      </label>
+      <div class="center-btn">
+        <button onclick="calculateTDEE()">Calculate TDEE & Protein</button>
+      </div>
 
-      <button onclick="calculateTDEE()">Calculate TDEE & Protein</button>
+      <div class="activity-info">
+        <p><strong>Sedentary:</strong> Little or no exercise</p>
+        <p><strong>Lightly Active:</strong> Light exercise/sports 1–3 days/week</p>
+        <p><strong>Moderately Active:</strong> Moderate exercise 3–5 days/week</p>
+        <p><strong>Very Active:</strong> Hard exercise 6–7 days/week</p>
+        <p><strong>Athlete Level:</strong> Very hard exercise & physical job</p>
+      </div>
 
       <div id="tdeeResult"></div>
 
-      <img src="https://raw.githubusercontent.com/RamdasCoundinya0716/workout-plan-selector/main/bodyfatimage.jpg" alt="Body Fat Reference" class="bodyfat-img" />
+        <div id="motivationalNote" style="margin-top: 10px; font-size: 14px; font-style: italic; font-weight: bold;">
+        Note: If you are into the process, stick with it for at least 12 weeks. Do not expect results overnight.
+        </div>
+
+
+      <div id="tdeeResult"></div>
     </div>
   </div>
 
@@ -216,26 +252,40 @@
       tdeeBox.style.display = tdeeBox.style.display === 'none' ? 'block' : 'none';
     }
 
+    function handleGoalChange() {
+      const goal = document.getElementById('goalSelector').value;
+      const cutSection = document.getElementById('cutSection');
+      cutSection.style.display = (goal === 'cut') ? 'block' : 'none';
+    }
+
     function calculateTDEE() {
       const weight = parseFloat(document.getElementById('weightInput').value);
-      const bf = parseFloat(document.getElementById('bodyFatSelect').value);
+      const goal = document.getElementById('goalSelector').value;
       const activity = parseFloat(document.getElementById('activityLevel').value);
-      const bodyType = document.getElementById('bodyType').value;
 
-      if (isNaN(weight) || isNaN(bf) || isNaN(activity)) {
-        alert("Please fill in all values.");
+      if (isNaN(weight) || isNaN(activity)) {
+        alert("Please fill in weight and activity level.");
         return;
       }
 
+      let bf = 20; // Default
+      if (goal === 'cut') {
+        bf = parseFloat(document.getElementById('bodyFatSelect').value);
+        if (isNaN(bf)) {
+          alert("Please select a body fat percentage for cutting.");
+          return;
+        }
+      }
+
       const leanMass = weight * (1 - bf / 100);
-      const bmr = 370 + (21.6 * leanMass); // Katch-McArdle
+      const bmr = 370 + (21.6 * leanMass);
       const tdee = bmr * activity;
       const proteinLow = (1.8 * leanMass).toFixed(1);
       const proteinHigh = (2.2 * leanMass).toFixed(1);
 
       document.getElementById('tdeeResult').innerHTML = `
-        <p><strong>Body Type:</strong> ${bodyType.charAt(0).toUpperCase() + bodyType.slice(1)}</p>
-        <p><strong>Lean Body Mass:</strong> ${leanMass.toFixed(1)} kg</p>
+        <p><strong>Goal:</strong> ${goal.charAt(0).toUpperCase() + goal.slice(1)}</p>
+        ${goal === 'cut' ? `<p><strong>Lean Body Mass:</strong> ${leanMass.toFixed(1)} kg</p>` : ""}
         <p><strong>BMR:</strong> ${bmr.toFixed(0)} kcal/day</p>
         <p><strong>TDEE:</strong> ${tdee.toFixed(0)} kcal/day</p>
         <p><strong>Protein Requirement:</strong> ${proteinLow}g – ${proteinHigh}g</p>
